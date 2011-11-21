@@ -90,7 +90,7 @@
 #endif
 
 #define PROG_NAME "rfcmd"
-#define PROG_VERSION "2.1.2"
+#define PROG_VERSION "2.1.3"
 /* #define RFCMD_DEBUG */ 
 
 /* Local function declarations */
@@ -215,7 +215,10 @@ int main( int argc, char **argv )
 			tcflush(fd, TCIFLUSH);
 			tcsetattr(fd,TCSANOW,&tio);
 
-			write(fd, txStr, strlen(txStr));
+                        if( write(fd, txStr, strlen(txStr)) < 0)
+                        {
+                             perror("Error writing to rf device");
+                        }
 
 			sleep(1); /* one second sleep to avoid		device 'choking' */
 			close(fd); /* Modified : Close fd to make a clean exit */
