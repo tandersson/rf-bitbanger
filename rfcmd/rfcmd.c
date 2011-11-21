@@ -72,6 +72,11 @@
  * via libftdi, libftdi makes sure simultaneous access is impossible.
  ******************************************************************************/
 
+/*******************************************************************************
+ * Modifications in rfcmd ver 2.1.2 done by Tord Andersson
+ *  Forked rfcmd from telldus to github. Changed bug report location. 
+ ******************************************************************************/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,7 +90,7 @@
 #endif
 
 #define PROG_NAME "rfcmd"
-#define PROG_VERSION "2.1.1"
+#define PROG_VERSION "2.1.2"
 /* #define RFCMD_DEBUG */ 
 
 /* Local function declarations */
@@ -551,7 +556,7 @@ void printUsage(void)
 	printf("\t\tCODE: 1..4\n\t\tDEVICE: 1..4\n");
 	printf("\t\tOFF_ON: 0..1\n" );
 	printf("\n");
-	printf("Report bugs to <info.tech@telldus.se>\n");
+	printf("Report bugs to www.github.com/tandersson/rf-bitbanger\n");
 }
 
 void printVersion(void) {
