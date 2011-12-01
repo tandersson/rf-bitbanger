@@ -1,4 +1,21 @@
 rf-bitbanger
-------------
+============
 Simple tools for bitbanged RF communication.
 
+rfcmd
+-----
+rfcmd is a small tool to act as a remote control for switches that use simple unidirectional 
+communication based on OOK (On Off Keying) modulation on top of 433 MHz.
+rfcmd use tellstick (www.telldus.se) as transmaitter.
+
+To build and test:
+
+> cd rf-bitbanger/rfcmd
+> make
+> sudo make install
+> rfcmd /dev/ttyUSB0 NEXA A 1 1
+> rfcmd /dev/ttyUSB0 NEXA A 1 0 
+
+Issue rfcmd --help to get more information on supported protocols and options.
+
+/Last update: 2011-12-01 Tord Andersson
