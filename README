@@ -4,9 +4,9 @@ Simple tools for bitbanged RF communication.
 
 rfcmd
 -----
-rfcmd is a small tool to act as a remote control for switches that use simple unidirectional 
+rfcmd is a small tool that acts as a remote control for switches that use simple unidirectional 
 communication based on OOK (On Off Keying) modulation on top of 433 MHz.
-rfcmd use tellstick (www.telldus.se) as transmaitter.
+rfcmd use tellstick (www.telldus.se) as transmitter.
 
 To build and test:
 
