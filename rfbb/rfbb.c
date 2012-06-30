@@ -1,12 +1,13 @@
 /*
- * rf_bitbanger.c
+ * rfbb.c
  *
- * rf_bitbanger - Device driver that transmits and records pulse 
- *          and pause-lengths using gpio or counting blocks on-chip. 
+ * rfbb -   Device driver that transmits and records pulse 
+ *          and pause-lengths using gpio. 
+ *          Previous name rf_bitbanger.c.
  *          Based on lirc_serial.c by Ralph Metzler et al
- *         Uses files belonging to the lirc framework (www.lirc.org).
+ *          Uses code parts from the lirc framework (www.lirc.org).
  *
- * Copyright (C) 2010 Tord Andersson <tord.andersson@endian.se>
+ *  Copyright (C) 2010, 2012 Tord Andersson <tord.andersson@endian.se>
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -67,7 +68,7 @@
 #include <linux/kfifo.h>
 
 
-#define RFBB_DRIVER_VERSION "0.04"
+#define RFBB_DRIVER_VERSION "0.05"
 #define RFBB_DRIVER_NAME "rfbb"
 
 #define MAX_RFBB_DEVS 1 /* One device only */

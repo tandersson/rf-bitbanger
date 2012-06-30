@@ -1,7 +1,7 @@
 ifneq ($(KERNELRELEASE),)
 #invoked from the kernel build system
 
-obj-m += rf_bitbanger.o
+obj-m += rfbb.o
 
 else
 #invoked directly from the command line
