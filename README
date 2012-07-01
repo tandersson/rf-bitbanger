@@ -2,11 +2,50 @@ rf-bitbanger
 ============
 Simple tools for bitbanged RF communication.
 
+rfbb driver
+-----------
+LIRC style device driver that transmits and records pulse and pause-lengths using gpio. 
+Uses code from lirc_serial.c by Ralph Metzler et al.
+
+To build on target:
+
+> cd rf-bitbanger/rfbb
+> make KERNELDIR=~/linux
+> sudo insmod rfbb.ko
+
+Check for device node and add if not already there using dialout as group:
+> ls -al /dev/rfbb
+> dmesg
+> sudo mknod /dev/rfbb c 252 0
+> sudo chown root:dialout /dev/rfbb
+> sudo chmod g+rw /dev/rfbb
+
+
+rfbb_cmd
+--------
+rfbb_cmd is a small tool similar to rfcmd (see further down), that acts as a remote control for switches that use 
+simple unidirectional communication based on OOK (On Off Keying) modulation on top of 433 MHz.
+rfcmd use the linux rfbb kernel driver on top of GPIO together with a common 433 MHz RF TX module.
+
+To build and test (on target) with an old style (not selflearning) NEXA/PROVE/ARC RW switch:
+
+> cd rf-bitbanger/rfbb_cmd
+> make
+> sudo make install
+
+A simple test on an old style (not selflearning) NEXA/PROVE/ARC set to channel D1:
+
+> rfbb_cmd -d /dev/rfbb -i RFBB -p NEXA -g D -c 1 -l 1
+> rfbb_cmd -d /dev/rfbb -i RFBB -p NEXA -g D -c 1 -l 0
+
+Issue rfbb_cmd --help to get more information on supported protocols and options.
+Note! All protocols might not be fully tested due to lack of receivers and time :).
+
 rfcmd
 -----
 rfcmd is a small tool that acts as a remote control for switches that use simple unidirectional 
 communication based on OOK (On Off Keying) modulation on top of 433 MHz.
-rfcmd use tellstick (www.telldus.se) as transmitter.
+rfcmd use tellstick (www.telldus.se) as transmitter and was written before rfbb_cmd.
 
 To build and test:
 
@@ -18,4 +57,5 @@ To build and test:
 
 Issue rfcmd --help to get more information on supported protocols and options.
 
-/Last update: 2011-12-01 Tord Andersson
+
+/Last update: 2012-07-01 Tord Andersson
