@@ -27,13 +27,13 @@ rfbb_cmd is a small tool similar to rfcmd (see further down), that acts as a rem
 simple unidirectional communication based on OOK (On Off Keying) modulation on top of 433 MHz.
 rfcmd use the linux rfbb kernel driver on top of GPIO together with a common 433 MHz RF TX module.
 
-To build and test (on target) with an old style (not selflearning) NEXA/PROVE/ARC RW switch:
+To build:
 
 > cd rf-bitbanger/rfbb_cmd
 > make
 > sudo make install
 
-A simple test on an old style (not selflearning) NEXA/PROVE/ARC set to channel D1:
+A simple test on an old style (not selflearning) NEXA/PROVE/ARC set to group D, channel 1.
 
 > rfbb_cmd -d /dev/rfbb -i RFBB -p NEXA -g D -c 1 -l 1
 > rfbb_cmd -d /dev/rfbb -i RFBB -p NEXA -g D -c 1 -l 0
