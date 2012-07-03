@@ -6,6 +6,7 @@ rfbb driver
 -----------
 LIRC style device driver that transmits and records pulse and pause-lengths using gpio. 
 Uses code from lirc_serial.c by Ralph Metzler et al.
+See rfbb_hardware.txt for information on how to connect the GPIO to a common 433 MHz TX module.
 
 To build on target:
 
@@ -23,9 +24,10 @@ Check for device node and add if not already there using dialout as group:
 
 rfbb_cmd
 --------
-rfbb_cmd is a small tool similar to rfcmd (see further down), that acts as a remote control for switches that use 
-simple unidirectional communication based on OOK (On Off Keying) modulation on top of 433 MHz.
-rfcmd use the linux rfbb kernel driver on top of GPIO together with a common 433 MHz RF TX module.
+rfbb_cmd is a small tool, that acts as a remote control for switches that use 
+simple unidirectional communication based on OOK (On Off Keying) modulation on a 433 MHz
+carrier.
+rfbb_cmd uses the linux rfbb kernel driver.
 
 To build:
 
@@ -43,9 +45,9 @@ Note! All protocols might not be fully tested due to lack of receivers and time 
 
 rfcmd
 -----
-rfcmd is a small tool that acts as a remote control for switches that use simple unidirectional 
-communication based on OOK (On Off Keying) modulation on top of 433 MHz.
-rfcmd use tellstick (www.telldus.se) as transmitter and was written before rfbb_cmd.
+rfcmd is a another small tool that acts as a remote control for switches that use simple unidirectional 
+communication based on OOK (On Off Keying) modulation on a 433 MHz.
+rfcmd use tellstick (www.telldus.se) as transmitter instead of rfbb.
 
 To build and test:
 
@@ -58,4 +60,4 @@ To build and test:
 Issue rfcmd --help to get more information on supported protocols and options.
 
 
-/Last update: 2012-07-01 Tord Andersson
+/Last update: 2012-07-03 Tord Andersson

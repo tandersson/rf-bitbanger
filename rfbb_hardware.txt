@@ -1,0 +1,30 @@
+Hardware for the rfbb driver
+============================
+
+Note! A monospaced font might make it easier to read tables below!
+
+RF Transmitter module pinout
+----------------------------
+
+A common RF transmitter module like TX433N (433.92MHz) has the following pinout:
+
+Pin    Function
+1      GND
+2      Data in
+3      VCC
+4      Antenna
+
+Make sure that VCC is able to operate from 3V DC.
+The range is often 3 - 12 V DC, but there might be other versions!     
+
+
+Raspberry Pi example
+--------------------
+
+RPI               TX433N
+Pin, function  -  Pin, function
+P1-01, 3V3     -  3, VCC
+P1-06, GND     -  1, GND
+P1-11, GPIO17  -  2, Data in
+No connection  -  4, Antenna. Connect a 170mm wire as antenna 
+
