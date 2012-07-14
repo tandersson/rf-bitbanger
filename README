@@ -1,6 +1,15 @@
 rf-bitbanger
 ============
-Simple tools for bitbanged RF communication.
+Simple tools for experiments with bitbanged RF communication.
+
+License: GPL v2. See the COPYING file.
+
+Disclaimer
+----------
+Do not use the tools and code in situations where operation or lack of operation may result in 
+property damage, personal injury, or death.
+Rules and regulations may control the use of RF communication at a national level. 
+Do not use rf-bitbanger tools or code to break applicable laws and regulations.
 
 rfbb driver
 -----------
