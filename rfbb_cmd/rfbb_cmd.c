@@ -29,7 +29,7 @@
 
 
 #define PROG_NAME "rfbb_cmd"
-#define PROG_VERSION "0.0.1"
+#define PROG_VERSION "0.0.2"
 
 #ifndef TRUE
 #define TRUE (1==1)
@@ -68,10 +68,15 @@
 #define LIRC_IS_TIMEOUT(val) (LIRC_MODE2(val) == LIRC_MODE2_TIMEOUT) 
 
 /* Protocol defines */
-#define NEXA_SHORT_PERIOD 340  /* microsecnds */
+#define NEXA_SHORT_PERIOD 340  /* microseconds */
 #define NEXA_LONG_PERIOD  1020 /* microseconds */
 #define NEXA_SYNC_PERIOD  (32 * NEXA_SHORT_PERIOD) /* between frames */
 #define NEXA_REPEAT 4
+
+#define SARTANO_SHORT_PERIOD 320  /* microseconds */
+#define SARTANO_LONG_PERIOD  960 /* microseconds */
+#define SARTANO_SYNC_PERIOD  (32 * SARTANO_SHORT_PERIOD) /* between frames */
+#define SARTANO_REPEAT 4
 
 
 typedef enum {MODE_UNKNOWN, MODE_READ, MODE_WRITE} rfMode_t;
@@ -687,8 +692,11 @@ int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
        (channelCode < 0) || (channelCode > 15) ||
        (on_offCode < 0) || (on_offCode > 1))
     {
-
-    } else {
+        fprintf(stderr,"Invalid group (house), channel or on/off code\n");
+        return 0;
+    } 
+    else 
+    {
         /* b0..b11 txCode where 'X' will be represented by 1 for simplicity.
            b0 will be sent first */
         txCode = houseCode;
@@ -725,10 +733,6 @@ int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
         pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_SYNC_PERIOD);
     }
 
-#ifdef RFCMD_DEBUG
-    printf("txCode: %04X\n", txCode);
-#endif
-
     return itemCount;
 }
 
@@ -736,42 +740,75 @@ int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
                         lirc_t * pTxBitstream, int * repeatCount)
 {
     int itemCount = 0;
-#if 0
-    
-    * pTxStr = '\0'; /* Make sure tx Bitstream is empty */
     int on_offCode;
     int bit;
-
+    
     on_offCode =  atoi(pOn_offStr);         /* ON/OFF 0..1 */
+    *repeatCount = SARTANO_REPEAT;
 
-#ifdef RFCMD_DEBUG
-    printf("Channel: %s, on_off: %d\n", pChannelStr, on_offCode);
-#endif
+    if(verbose)
+    {
+        printf("Channel: %s, on_off: %d\n", pChannelStr, on_offCode);
+    }
 
     /* check converted parameters for validity */
     if((strlen(pChannelStr) != 10) ||
-       (on_offCode < 0) || (on_offCode > 1)) {
-    } else {
-        strcat(pTxStr,"S");
+       (on_offCode < 0) || (on_offCode > 1)) 
+    {
+        fprintf(stderr,"Invalid channel or on/off code\n");
+        return 0;
+    } 
+    else 
+    {
         for(bit=0;bit<=9;bit++)
         {
-            if(strncmp(pChannelStr+bit, "1", 1) == 0) { //If it is a "1"
-                strcat(pTxStr,"$k$k");
-            } else {
-                strcat(pTxStr,"$kk$");
-        }
+            /* "1" bit */
+            if(strncmp(pChannelStr+bit, "1", 1) == 0) 
+            { 
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);  
+            }
+            /* "0" bit */
+            else 
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+            }
         }
         if (on_offCode >= 1)
-            strcat(pTxStr,"$k$k$kk$"); //the "turn on"-code
+        {
+            /* ON == "10" */
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);            
+        }    
         else
-            strcat(pTxStr,"$kk$$k$k"); //the "turn off"-code
-
+        {
+            /* OFF == "01" */
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);  
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);            
+        }
+            
         /* add stop/sync bit and command termination char '+'*/
-        strcat(pTxStr,"$k+");
+        pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+        pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SYNC_PERIOD);
     }
-
-    return strlen(pTxStr);
-#endif
+    
     return itemCount;
 }
 
