@@ -110,7 +110,7 @@ static int rfbb_major = 0; /* use dynamic major number assignment */
 
 static int share_irq = 0;
 static int interrupt_enabled = 0;
-static int debug = 1;
+static int debug = 0;
 static int device_open = 0;
 static int hw_mode = HW_MODE_POWER_DOWN;
 
@@ -185,8 +185,8 @@ static void set_tx_mode(void)
 				gpio_set_value(hardware[type].rf_enable_pin, 1);
 				udelay(20);
 			}
-                        if(hardware[type].tx_ctrl_pin != RFBB_NO_GPIO_PIN)
-                        {
+            if(hardware[type].tx_ctrl_pin != RFBB_NO_GPIO_PIN)
+            {
 				gpio_set_value(hardware[type].tx_ctrl_pin, 1);
 				udelay(400); /* let it settle */
 			}
@@ -399,11 +399,14 @@ static int hardware_init(void)
 
 	if (type == RFBB_GPIO) {
 		/* Setup all pins */
-		err = gpio_request_one(hardware[type].tx_pin, GPIOF_OUT_INIT_LOW, "RFBB_TX");
-		if (err) {
-			printk(KERN_ERR  RFBB_DRIVER_NAME
-			       "Could not request RFBB TX pin, error: %d\n", err);
-			return -EIO;
+		if(hardware[type].tx_pin != RFBB_NO_GPIO_PIN)
+		{
+			err = gpio_request_one(hardware[type].tx_pin, GPIOF_OUT_INIT_LOW, "RFBB_TX");
+			if (err) {
+				printk(KERN_ERR  RFBB_DRIVER_NAME
+				       "Could not request RFBB TX pin, error: %d\n", err);
+				return -EIO;
+			}
 		}                            
 		
 		if(hardware[type].rx_pin != RFBB_NO_GPIO_PIN)
@@ -716,6 +719,21 @@ static void rfbb_exit_module(void)
 {
 	cdev_del(rfbbDevs);
 	unregister_chrdev_region(MKDEV(rfbb_major, 0), 1);
+	if(hardware[type].tx_pin != RFBB_NO_GPIO_PIN)
+	{
+		gpio_unexport(hardware[type].tx_pin);
+		gpio_free(hardware[type].tx_pin);
+	}
+	if(hardware[type].tx_ctrl_pin != RFBB_NO_GPIO_PIN)
+	{
+		gpio_unexport(hardware[type].tx_ctrl_pin);
+		gpio_free(hardware[type].tx_ctrl_pin);		
+	}
+	if(hardware[type].rx_pin != RFBB_NO_GPIO_PIN)
+	{
+		gpio_unexport(hardware[type].rx_pin);
+		gpio_free(hardware[type].rx_pin);			
+	}
 	dprintk("cleaned up module\n");
 }
 
