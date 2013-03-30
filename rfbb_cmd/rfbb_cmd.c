@@ -2,7 +2,7 @@
  ** rfbb_cmd.c ***********************************************************
  ****************************************************************************
  *
- * rfbb_cmd - Utility to control NEXA and other RF remote 
+ * rfbb_cmd - Utility to control NEXA and other RF remote
  * receivers through a RF bitbanger interface. Some code is borrowed from
  * rfcmd.
  *
@@ -65,7 +65,7 @@
 
 #define LIRC_IS_SPACE(val) (LIRC_MODE2(val) == LIRC_MODE2_SPACE)
 #define LIRC_IS_PULSE(val) (LIRC_MODE2(val) == LIRC_MODE2_PULSE)
-#define LIRC_IS_TIMEOUT(val) (LIRC_MODE2(val) == LIRC_MODE2_TIMEOUT) 
+#define LIRC_IS_TIMEOUT(val) (LIRC_MODE2(val) == LIRC_MODE2_TIMEOUT)
 
 /* Protocol defines */
 #define NEXA_SHORT_PERIOD 340  /* microseconds */
@@ -81,17 +81,19 @@
 
 typedef enum {MODE_UNKNOWN, MODE_READ, MODE_WRITE} rfMode_t;
 typedef enum {IFC_UNKNOWN, IFC_RFBB, IFC_CUL, IFC_TELLSTICK} rfInterface_t;
-typedef enum {PROT_UNKNOWN, PROT_RAW, PROT_NEXA, PROT_PROOVE, PROT_NEXA_L, 
-    PROT_SARTANO, PROT_WAVEMAN, PROT_IKEA, PROT_ESIC} rfProtocol_t;
-                       
+typedef enum {PROT_UNKNOWN, PROT_RAW, PROT_NEXA, PROT_PROOVE, PROT_NEXA_L,
+    PROT_SARTANO, PROT_WAVEMAN, PROT_IKEA, PROT_ESIC, PROT_IMPULS} rfProtocol_t;
+
 /* LIRC pulse/space element */
-typedef int32_t lirc_t; 
+typedef int32_t lirc_t;
 
 /* Local function declarations */
 int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
                      const char * pOn_offStr, BOOL waveman, lirc_t * txBitstream, int * repeatCount);
 
 int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
+                        lirc_t * txBitstream, int * repeatCount);
+int createImpulsBitstream(const char * pChannelStr, const char * pOn_offStr,
                         lirc_t * txBitstream, int * repeatCount);
 int createIkeaBitstream(const char * pSystemStr, const char * pChannelStr,
                      const char * pLevelStr, const char *pDimStyle,
@@ -103,8 +105,8 @@ static void printVersion(void);
 static void signalTerminate(int signo);
 
 /* Local variables */
-BOOL verbose = FALSE; /* -v option */ 
-BOOL stopNow = FALSE;   
+BOOL verbose = FALSE; /* -v option */
+BOOL stopNow = FALSE;
 
 /* Command line option handling */
 static const char *optString = "d:i:p:rwg:c:l:vh?";
@@ -118,7 +120,7 @@ static const struct option longOpts[] = {
     { "group", required_argument, NULL, 'g' },
     { "channel", required_argument, NULL, 'c' },
     { "serialnumber", required_argument, NULL, 's' },
-    { "level", required_argument, NULL, 'l' }, 
+    { "level", required_argument, NULL, 'l' },
     { "verbose", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, 0 }
@@ -154,33 +156,33 @@ int main( int argc, char **argv )
     if(argc < 2)
     {
         printUsage();
-        exit(1);    
+        exit(1);
     }
 
     opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
 
     /* parse command options */
-    while( opt != -1 ) 
+    while( opt != -1 )
     {
-    
-        switch( opt ) 
+
+        switch( opt )
         {
             case 'd':
                 if (optarg)
-                { 
+                {
                     device = optarg;
                 }
                 else
                 {
                     fprintf(stderr, "Error. Missing device path.\n");
                     printUsage();
-                    exit(1); 
-                }                
+                    exit(1);
+                }
                 break;
 
             case 'i':
                 if (optarg)
-                { 
+                {
                     if(strcmp( "RFBB", optarg) == 0)
                     {
                         rfInterface = IFC_RFBB;
@@ -205,9 +207,9 @@ int main( int argc, char **argv )
                 {
                     fprintf(stderr, "Error. Missing interface type.\n");
                     printUsage();
-                    exit(1); 
-                }                
-                break;  
+                    exit(1);
+                }
+                break;
 
             case 'r':
                 mode = MODE_READ;
@@ -219,7 +221,7 @@ int main( int argc, char **argv )
 
             case 'p':
                 if (optarg)
-                {   
+                {
                     rfProtocolStr = optarg;
                     if(strcmp( "NEXA", rfProtocolStr) == 0)
                     {
@@ -237,6 +239,10 @@ int main( int argc, char **argv )
                     {
                         rfProtocol = PROT_SARTANO;
                     }
+                    else if(strcmp( "IMPULS", rfProtocolStr ) == 0)
+                    {
+                        rfProtocol = PROT_IMPULS;
+                    }
                     else if(strcmp( "NEXA_L", rfProtocolStr ) == 0)
                     {
                         rfProtocol = PROT_NEXA_L;
@@ -253,8 +259,8 @@ int main( int argc, char **argv )
                 {
                     fprintf(stderr, "Error. Missing protocol\n");
                     printUsage();
-                    exit(1); 
-                }                
+                    exit(1);
+                }
                 break;
 
             case 'g':
@@ -266,9 +272,9 @@ int main( int argc, char **argv )
                 {
                     fprintf(stderr, "Error. Missing group/house/system ID\n");
                     printUsage();
-                    exit(1); 
-                }                
-            break;                
+                    exit(1);
+                }
+            break;
 
             case 'c':
                 if (optarg)
@@ -279,8 +285,8 @@ int main( int argc, char **argv )
                 {
                     fprintf(stderr, "Error. Missing channel number\n");
                     printUsage();
-                    exit(1); 
-                }                
+                    exit(1);
+                }
             break;
 
             case 'l':
@@ -292,8 +298,8 @@ int main( int argc, char **argv )
                 {
                     fprintf(stderr, "Error. Missing level\n");
                     printUsage();
-                    exit(1); 
-                }                
+                    exit(1);
+                }
             break;
 
             case 'v':
@@ -320,9 +326,9 @@ int main( int argc, char **argv )
                 break;
         }
 
-        opt = getopt_long( argc, argv, optString, longOpts, &longIndex ); 
+        opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
     }
-      
+
 
     /* Build generic transmit bitstream for the selected protocol */
     if(mode == MODE_WRITE)
@@ -363,8 +369,19 @@ int main( int argc, char **argv )
                     printUsage();
                     exit(1);
                 }
-                break; 
+                break;
 
+            case PROT_IMPULS:
+                if(verbose)
+                {
+                    printf("IMPULS protocol selected\n");
+                }
+                txItemCount = createImpulsBitstream(channelStr, levelStr, txBitstream, &repeatCount);
+                if (txItemCount == 0) {
+                    printUsage();
+                    exit(1);
+                }
+                break;
             case PROT_IKEA:
                 if(verbose)
                 {
@@ -380,9 +397,9 @@ int main( int argc, char **argv )
             default:
                 fprintf(stderr, "Protocol: %s is currently not supported\n", rfProtocolStr);
                 printUsage();
-                exit(1);             
+                exit(1);
 
-        }       
+        }
     }
 
         /* create the semaphore - will reuse an existing one if it exists */
@@ -401,12 +418,12 @@ int main( int argc, char **argv )
                         fprintf(stderr,  "%s - Error aquiring port semaphore\n", PROG_NAME);
                         sem_unlink(SEM_NAME);
                         sem_close(portMutex);
-                        exit(1); 
+                        exit(1);
         }
 
-        /* Transmit/read handling for each interface type */ 
+        /* Transmit/read handling for each interface type */
         switch (rfInterface) {
-          
+
           case IFC_RFBB:
 
             if(verbose)
@@ -437,9 +454,9 @@ int main( int argc, char **argv )
                     {
                          perror("Error writing to RFBB device");
                          break;
-                    }               
+                    }
                 }
-                sleep(1);               
+                sleep(1);
             }
             else if(mode == MODE_READ)
             {
@@ -449,20 +466,20 @@ int main( int argc, char **argv )
                     printf("Reading pulse_space_items\n");
                 }
 
-                /* 
-                 * Set up signal handlers to act on CTRL-C events 
+                /*
+                 * Set up signal handlers to act on CTRL-C events
                  */
                 if (signal(SIGINT, signalTerminate) == SIG_ERR)
                 {
                     perror("Can't register signal handler for CTRL-C et al: ");
                     exit (-1);
-                } 
+                }
 
                 while(stopNow == FALSE) /* repeat until CTRL-C */
-                {   
+                {
                     rxCount = read(fd, rxBitstream, 4);
                     if(rxCount == 4)
-                    {   
+                    {
                         rxValue = (uint32_t)*&rxBitstream[0];
                         if(LIRC_IS_TIMEOUT(rxValue))
                         {
@@ -478,7 +495,7 @@ int main( int argc, char **argv )
                         }
                     }
                     else
-                    {   
+                    {
                         if(rxCount == 0)
                         {
                             usleep(100*1000); /* 100 ms */
@@ -491,7 +508,7 @@ int main( int argc, char **argv )
                             fflush(stdout);
                         }
                     }
-                }               
+                }
             }
             printf("\n");
             close(fd);
@@ -527,11 +544,11 @@ int main( int argc, char **argv )
             {
                  perror("Error writing to Tellstick device");
             }
-            sleep(1); /* one second sleep to avoid device 'choking' */  
+            sleep(1); /* one second sleep to avoid device 'choking' */
             close(fd);
-#endif           
+#endif
           break;
-          
+
           case IFC_CUL:
             if(verbose)
             {
@@ -563,7 +580,7 @@ int main( int argc, char **argv )
 
             if(mode == MODE_WRITE)
             {
-     
+
                 /* CUL433 nethome format */
                 asciiCmdLength = txBitstream2culStr(txBitstream, txItemCount, repeatCount, asciiCmdStr);
 
@@ -636,28 +653,28 @@ int main( int argc, char **argv )
             }
             close(fd);
           break;
-          
-          
+
+
           default:
-                fprintf(stderr,  "%s - Illegal interface type (%d)\n", PROG_NAME, rfInterface);         
+                fprintf(stderr,  "%s - Illegal interface type (%d)\n", PROG_NAME, rfInterface);
           break;
-          
-    
+
+
         }
-        
-        
+
+
         /* Unlock semaphore */
             if(sem_post(portMutex) != 0)
             {
                 fprintf(stderr,  "%s - Error releasing port semaphore\n", PROG_NAME);
                 sem_unlink(SEM_NAME);
-                sem_close(portMutex);          
+                sem_close(portMutex);
                 exit(1);
             }
         else
         {
             sem_unlink(SEM_NAME);
-            sem_close(portMutex);   
+            sem_close(portMutex);
         }
 
   exit(0);
@@ -694,8 +711,8 @@ int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
     {
         fprintf(stderr,"Invalid group (house), channel or on/off code\n");
         return 0;
-    } 
-    else 
+    }
+    else
     {
         /* b0..b11 txCode where 'X' will be represented by 1 for simplicity.
            b0 will be sent first */
@@ -714,17 +731,17 @@ int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
                 /* bit timing might need further refinement */
                 /* 340 us high, 1020 us low,  340 us high, 1020 us low */
                 pTxBitstream[itemCount++] = LIRC_PULSE(NEXA_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD); 
+                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD);
                 pTxBitstream[itemCount++] = LIRC_PULSE(NEXA_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD);             
-            } 
-            else 
+                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD);
+            }
+            else
             { /* add 'X' (floating bit) */
                 /* 340 us high, 1020 us low, 1020 us high,  350 us low */
                 pTxBitstream[itemCount++] = LIRC_PULSE(NEXA_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD); 
+                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_LONG_PERIOD);
                 pTxBitstream[itemCount++] = LIRC_PULSE(NEXA_LONG_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_SHORT_PERIOD);              
+                pTxBitstream[itemCount++] = LIRC_SPACE(NEXA_SHORT_PERIOD);
             }
             bitmask = bitmask<<1;
         }
@@ -736,13 +753,13 @@ int createNexaBitstream(const char * pHouseStr, const char * pChannelStr,
     return itemCount;
 }
 
-int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
+int createImpulsBitstream(const char * pChannelStr, const char * pOn_offStr,
                         lirc_t * pTxBitstream, int * repeatCount)
 {
     int itemCount = 0;
     int on_offCode;
     int bit;
-    
+
     on_offCode =  atoi(pOn_offStr);         /* ON/OFF 0..1 */
     *repeatCount = SARTANO_REPEAT;
 
@@ -753,28 +770,51 @@ int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
 
     /* check converted parameters for validity */
     if((strlen(pChannelStr) != 10) ||
-       (on_offCode < 0) || (on_offCode > 1)) 
+       (on_offCode < 0) || (on_offCode > 1))
     {
         fprintf(stderr,"Invalid channel or on/off code\n");
         return 0;
-    } 
-    else 
+    }
+    else
     {
-        for(bit=0;bit<=9;bit++)
+        // The house code:
+        for(bit=0; bit < 5 ;bit++)
         {
             /* "1" bit */
-            if(strncmp(pChannelStr+bit, "1", 1) == 0) 
-            { 
-                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
-                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);  
+            // 11101110 is on
+            if(strncmp(pChannelStr+bit, "1", 1) == 0)
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
             }
             /* "0" bit */
-            else 
+            else
             {
                 pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+            }
+        }
+        // The group code
+        for(bit=5; bit < 10 ;bit++)
+        {
+            /* "1" bit */
+          // 10001000 is on
+            if(strncmp(pChannelStr+bit, "1", 1) == 0)
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            }
+            /* "0" bit */
+            else
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
                 pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
                 pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
             }
@@ -783,32 +823,108 @@ int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
         {
             /* ON == "10" */
             pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
             pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
             pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
             pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
-            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);            
-        }    
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+        }
         else
         {
             /* OFF == "01" */
             pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
             pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);  
-            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD); 
-            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
-            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);            
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
         }
-            
+
         /* add stop/sync bit and command termination char '+'*/
         pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
         pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SYNC_PERIOD);
     }
-    
+
+    return itemCount;
+}
+
+int createSartanoBitstream(const char * pChannelStr, const char * pOn_offStr,
+                        lirc_t * pTxBitstream, int * repeatCount)
+{
+    int itemCount = 0;
+    int on_offCode;
+    int bit;
+
+    on_offCode =  atoi(pOn_offStr);         /* ON/OFF 0..1 */
+    *repeatCount = SARTANO_REPEAT;
+
+    if(verbose)
+    {
+        printf("Channel: %s, on_off: %d\n", pChannelStr, on_offCode);
+    }
+
+    /* check converted parameters for validity */
+    if((strlen(pChannelStr) != 10) ||
+       (on_offCode < 0) || (on_offCode > 1))
+    {
+        fprintf(stderr,"Invalid channel or on/off code\n");
+        return 0;
+    }
+    else
+    {
+        for(bit=0;bit<=9;bit++)
+        {
+            /* "1" bit */
+            if(strncmp(pChannelStr+bit, "1", 1) == 0)
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            }
+            /* "0" bit */
+            else
+            {
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+                pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+            }
+        }
+        if (on_offCode >= 1)
+        {
+            /* ON == "10" */
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+        }
+        else
+        {
+            /* OFF == "01" */
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+            pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_LONG_PERIOD);
+        }
+
+        /* add stop/sync bit and command termination char '+'*/
+        pTxBitstream[itemCount++] = LIRC_PULSE(SARTANO_SHORT_PERIOD);
+        pTxBitstream[itemCount++] = LIRC_SPACE(SARTANO_SYNC_PERIOD);
+    }
+
     return itemCount;
 }
 
@@ -950,23 +1066,23 @@ int createIkeaBitstream(const char * pSystemStr, const char * pChannelStr,
 
     strcat(pStrReturn, "+");
 
-    return strlen(pStrReturn); 
+    return strlen(pStrReturn);
 #endif
     return 0;
 }
 
-/* Convert generic bitstream format to CUL433 format */ 
+/* Convert generic bitstream format to CUL433 format */
 int txBitstream2culStr(lirc_t * pTxBitstream, int txItemCount, int repeatCount, char * txStrCul)
 {
     int i;
     int pulses = 0;
     char * pCulStr = txStrCul;
     char tmpStr [20];
-    
+
     * pCulStr = '\0';
 
     strcat(pCulStr, "\r\nX01\r\n"); /* start radio */
-    strcat(pCulStr, "E\r\n"); /* empty tx buffer */ 
+    strcat(pCulStr, "E\r\n"); /* empty tx buffer */
 
     for(i=0;i<txItemCount;i++)
     {
@@ -982,16 +1098,16 @@ int txBitstream2culStr(lirc_t * pTxBitstream, int txItemCount, int repeatCount, 
         {
             strcat ( pCulStr, tmpStr );
             strcat ( pCulStr, "\r\n" );
-        }                
+        }
 
     }
-    
+
     if(pulses > 1)
     {
-      
+
         /* number of repetitions */
         sprintf(tmpStr, "S%02d\r\n", repeatCount);
-        strcat(pCulStr, tmpStr);	
+        strcat(pCulStr, tmpStr);
         return strlen(pCulStr);
     }
     else
@@ -1006,9 +1122,9 @@ static void printUsage(void)
     printf("\nUsage: %s <-diprwgcslvh> [value]\n", PROG_NAME);
     printf("\t -d --device <path> defaults to %s\n", DEFAULT_DEVICE);
     printf("\t -i --interface. RFBB, CUL or TELLSTICK. Defaults to RFBB (RF Bitbanger)\n");
-    printf("\t -p --protocol. NEXA, NEXA_L, SARTANO, WAVEMAN, IKEA or RAW\n"); 
+    printf("\t -p --protocol. NEXA, NEXA_L, SARTANO, WAVEMAN, IKEA or RAW\n");
     printf("\t -r --read. Raw space/pulse reading. For interfaces above that supports reading\n");
-    printf("\t -w --write. Send command (default)\n");  
+    printf("\t -w --write. Send command (default)\n");
     printf("\t -g --group. The group/house/system number or letter\n");
     printf("\t -c --channel. The channel/unit number\n");
     printf("\t -s --serialnumber. The serial/unique number used by NEXA L (self-learning)\n");
@@ -1041,7 +1157,7 @@ static void signalTerminate(int signo)
 {
     /*
     * This will force the exit handler to run
-    */   
+    */
     if(verbose)
     {
         printf("Signal handler for %d signal\n", signo);
