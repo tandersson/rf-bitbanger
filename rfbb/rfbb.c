@@ -63,7 +63,6 @@
 #include <linux/irq.h>
 #include <linux/fcntl.h>
 #include <linux/gpio.h>
-#include <mach/gpio.h>
 #include <linux/cdev.h> 
 #include <linux/kfifo.h>
 
@@ -110,7 +109,7 @@ static int rfbb_major = 0; /* use dynamic major number assignment */
 
 static int share_irq = 0;
 static int interrupt_enabled = 0;
-static int debug = 0;
+static bool debug = false;
 static int device_open = 0;
 static int hw_mode = HW_MODE_POWER_DOWN;
 
